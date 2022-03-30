@@ -64,7 +64,7 @@ Respond %s to continue workflow or %s to cancel.`,
 	return err
 }
 
-func approvalFromComments(comments []*github.IssueComment, approvers []string) (approvalStatus, error) {
+func approvalFromComments(comments []*github.IssueComment, approvers []string, IssueState *string) (approvalStatus, error) {
 	remainingApprovers := make([]string, len(approvers))
 	copy(remainingApprovers, approvers)
 
@@ -96,6 +96,10 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string) (
 		if isDenialComment {
 			return approvalStatusDenied, nil
 		}
+	}
+
+	if *IssueState == "closed" {
+		return approvalStatusDenied, nil
 	}
 
 	return approvalStatusPending, nil

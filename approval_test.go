@@ -12,12 +12,15 @@ func TestApprovalFromComments(t *testing.T) {
 	bodyApproved := "Approved"
 	bodyDenied := "Denied"
 	bodyPending := "not approval or denial"
+	issueOpen := "open"
+	issueClosed := "closed"
 
 	testCases := []struct {
 		name           string
 		comments       []*github.IssueComment
 		approvers      []string
 		expectedStatus approvalStatus
+		issueState     *string
 	}{
 		{
 			name: "single_approver_single_comment_approved",
@@ -29,6 +32,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1},
 			expectedStatus: approvalStatusApproved,
+			issueState:     &issueOpen,
 		},
 		{
 			name: "single_approver_single_comment_denied",
@@ -40,6 +44,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1},
 			expectedStatus: approvalStatusDenied,
+			issueState:     &issueOpen,
 		},
 		{
 			name: "single_approver_single_comment_pending",
@@ -51,6 +56,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1},
 			expectedStatus: approvalStatusPending,
+			issueState:     &issueOpen,
 		},
 		{
 			name: "single_approver_multi_comment_approved",
@@ -66,6 +72,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1},
 			expectedStatus: approvalStatusApproved,
+			issueState:     &issueOpen,
 		},
 		{
 			name: "multi_approver_approved",
@@ -81,6 +88,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1, login2},
 			expectedStatus: approvalStatusApproved,
+			issueState:     &issueOpen,
 		},
 		{
 			name: "multi_approver_mixed",
@@ -96,6 +104,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1, login2},
 			expectedStatus: approvalStatusPending,
+			issueState:     &issueOpen,
 		},
 		{
 			name: "multi_approver_denied",
@@ -111,12 +120,37 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1, login2},
 			expectedStatus: approvalStatusDenied,
+			issueState:     &issueOpen,
+		},
+		{
+			name: "issue_closed_while_approved",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1},
+					Body: &bodyApproved,
+				},
+			},
+			approvers:      []string{login1},
+			expectedStatus: approvalStatusApproved,
+			issueState:     &issueClosed,
+		},
+		{
+			name: "issue_closed_while_pending",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1},
+					Body: &bodyApproved,
+				},
+			},
+			approvers:      []string{login1, login2},
+			expectedStatus: approvalStatusDenied,
+			issueState:     &issueClosed,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			actual, err := approvalFromComments(testCase.comments, testCase.approvers)
+			actual, err := approvalFromComments(testCase.comments, testCase.approvers, testCase.issueState)
 			if err != nil {
 				t.Fatalf("error getting approval from comments: %v", err)
 			}

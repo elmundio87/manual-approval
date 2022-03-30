@@ -51,13 +51,20 @@ func main() {
 
 commentLoop:
 	for {
+
+		issue, _, err := client.Issues.Get(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber)
+		if err != nil {
+			fmt.Printf("error getting issue: %v\n", err)
+			os.Exit(1)
+		}
+
 		comments, _, err := client.Issues.ListComments(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
 		if err != nil {
 			fmt.Printf("error getting comments: %v\n", err)
 			os.Exit(1)
 		}
 
-		approved, err := approvalFromComments(comments, approvers)
+		approved, err := approvalFromComments(comments, approvers, issue.State)
 		if err != nil {
 			fmt.Printf("error getting approval from comments: %v\n", err)
 			os.Exit(1)
